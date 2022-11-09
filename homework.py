@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 
-@dataclass
+@dataclass(repr=False, eq=False)
 class InfoMessage:
     """Информационное сообщение о тренировке.
 
@@ -17,13 +17,17 @@ class InfoMessage:
     distance: float
     speed: float
     calories: float
+    OUTPUT_FORMAT: str = ('Тип тренировки: {training_type}; Длительность: '
+                          '{duration:.3f} ч.; '
+                          'Дистанция: {distance:.3f} км; Ср. '
+                          'скорость: {speed:.3f} км/ч; Потрачено ккал: '
+                          '{calories:.3f}.')
 
     def get_message(self) -> str:
-        return (f'Тип тренировки: {self.training_type}; Длительность: '
-                f'{self.duration:.3f} ч.; '
-                f'Дистанция: {self.distance:.3f} км; Ср. '
-                f'скорость: { self.speed:.3f} км/ч; Потрачено ккал: '
-                f'{self.calories:.3f}.')
+        """Вывести сообщение."""
+        all_class_values: dict = asdict(self)
+        all_class_values.popitem()
+        return (self.OUTPUT_FORMAT.format(**all_class_values))
 
 
 class Training:
@@ -76,6 +80,7 @@ class Running(Training):
     CALORIES_MEAN_SPEED_SHIFT = 1.79
 
     def get_spent_calories(self) -> float:
+        """Получить количество затраченных калорий."""
         return ((self.CALORIES_MEAN_SPEED_MULTIPLIER * self.get_mean_speed()
                 + self.CALORIES_MEAN_SPEED_SHIFT)
                 * self.weight / self.M_IN_KM
@@ -136,32 +141,12 @@ class Swimming(Training):
                 * self.duration)
 
 
-class CorruptedData(Training):
-    """Плохие данные."""
-    duration = 0
-
-    def __init__(self):
-        pass
-
-    def get_distance(self) -> int:
-        return 0
-
-    def get_mean_speed(self) -> int:
-        return 0
-
-    def get_spent_calories(self) -> int:
-        return 0
-
-
 def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
-    training_classes = {'SWM': (Swimming),
-                        'RUN': (Running),
-                        'WLK': (SportsWalking)}
-    try:
-        return training_classes[workout_type](*data)
-    except Exception:
-        return (CorruptedData())
+    training_classes: dict[str, type] = {'SWM': Swimming,
+                                         'RUN': Running,
+                                         'WLK': SportsWalking}
+    return training_classes[workout_type](*data)
 
 
 def main(training: Training) -> None:
@@ -171,12 +156,15 @@ def main(training: Training) -> None:
 
 
 if __name__ == '__main__':
-    packages: dict[str, list[float]] = [
+    packages: list[str, list[int]] = [
         ('SWM', [720, 1, 80, 25, 40]),
         ('RUN', [15000, 1, 75]),
         ('WLK', [9000, 1, 75, 180]),
     ]
 
     for workout_type, data in packages:
-        training: Training = read_package(workout_type, data)
-        main(training)
+        try:
+            training: Training = read_package(workout_type, data)
+            main(training)
+        except KeyError:
+            print("Data is corrupted.")
