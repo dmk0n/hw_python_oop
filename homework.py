@@ -1,4 +1,5 @@
 from dataclasses import dataclass, asdict
+from typing import ClassVar, Type
 
 
 @dataclass(repr=False, eq=False)
@@ -17,16 +18,15 @@ class InfoMessage:
     distance: float
     speed: float
     calories: float
-    OUTPUT_FORMAT: str = ('Тип тренировки: {training_type}; Длительность: '
-                          '{duration:.3f} ч.; '
-                          'Дистанция: {distance:.3f} км; Ср. '
-                          'скорость: {speed:.3f} км/ч; Потрачено ккал: '
-                          '{calories:.3f}.')
+    OUTPUT_FORMAT: ClassVar[str] = ('Тип тренировки: {training_type}; '
+                                    'Длительность: {duration:.3f} ч.; '
+                                    'Дистанция: {distance:.3f} км; Ср. '
+                                    'скорость: {speed:.3f} км/ч; Потрачено '
+                                    'ккал: {calories:.3f}.')
 
     def get_message(self) -> str:
         """Вывести сообщение."""
         all_class_values: dict = asdict(self)
-        all_class_values.popitem()
         return (self.OUTPUT_FORMAT.format(**all_class_values))
 
 
@@ -143,9 +143,9 @@ class Swimming(Training):
 
 def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
-    training_classes: dict[str, type] = {'SWM': Swimming,
-                                         'RUN': Running,
-                                         'WLK': SportsWalking}
+    training_classes: dict[str, Type[Training]] = {'SWM': Swimming,
+                                                   'RUN': Running,
+                                                   'WLK': SportsWalking}
     return training_classes[workout_type](*data)
 
 
@@ -156,12 +156,11 @@ def main(training: Training) -> None:
 
 
 if __name__ == '__main__':
-    packages: list[str, list[int]] = [
+    packages: list[tuple[str, list[int]]] = [
         ('SWM', [720, 1, 80, 25, 40]),
         ('RUN', [15000, 1, 75]),
         ('WLK', [9000, 1, 75, 180]),
     ]
-
     for workout_type, data in packages:
         try:
             training: Training = read_package(workout_type, data)
